@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_rating_bar/meal_api.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 void main() {
@@ -20,7 +21,9 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    var listView = ListView.builder(
+    var listView = ListView.separated(
+      itemCount: score.length,
+      separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (context, index) => ListTile(
         leading: Text('${score[index].rate}'),
         title: Text(score[index].comment),
@@ -60,7 +63,12 @@ class _MyAppState extends State<MyApp> {
             ),
             ElevatedButton(
                 onPressed: enabled
-                    ? () {
+                    ? () async {
+                        var api = MealApi();
+                        var eval_date = DateTime.now().toString().split(' ')[0];
+                        var res =
+                            await api.insert(eval_date, rate, controller.text);
+                        print(res);
                         score.add(
                           new Score(rate: rate, comment: controller.text),
                         );
