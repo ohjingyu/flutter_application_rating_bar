@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_rating_bar/meal_api.dart';
+import 'package:flutter_application_rating_bar/my_chart.dart';
 
 class Result extends StatefulWidget {
   const Result({super.key});
@@ -9,6 +11,7 @@ class Result extends StatefulWidget {
 
 class _ResultState extends State<Result> {
   dynamic chartPage = const Text("차트영역");
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,9 +24,24 @@ class _ResultState extends State<Result> {
                     initialDate: DateTime.now(),
                     firstDate: DateTime(2023),
                     lastDate: DateTime.now());
+                if (dt != null) {
+                  var api = MealApi();
+                  var result =
+                      await api.getList(evalDate: dt.toString().split(' ')[0]);
+                  // print(result);
+                  List<String> days = [];
+                  List<double> ratings = [];
+                  for (var k in result) {
+                    days.add(k['eval_date']);
+                    ratings.add(double.parse(k['rating']));
+                  }
+                  setState(() {
+                    chartPage = MyChart(days: days, ratings: ratings);
+                  });
+                }
               },
               icon: const Icon(Icons.calendar_month)),
-          chartPage,
+          Expanded(child: chartPage),
         ],
       ),
     );
