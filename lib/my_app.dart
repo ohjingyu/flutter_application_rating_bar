@@ -14,29 +14,64 @@ class _MyAppState extends State<MyApp> {
   var enabled = false;
   List<Score> score = [];
   double rate = 0;
+  String now = '날짜를 선택하세요';
+  dynamic listView = const Text('결과출력화면');
+  void showReview({required String evalDate}) async {
+    var api = MealApi();
+    var result = api.getReview(evalDate: evalDate);
+    setState(() {
+      listView = FutureBuilder(
+        future: result,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var data = snapshot.data;
+            return ListView.separated(
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    leading: Text(data[index]['rating']),
+                    title: Text(data[index]['comment']),
+                  );
+                },
+                separatorBuilder: (context, index) => const Divider(),
+                itemCount: data!.length);
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    var listView = ListView.separated(
-      itemCount: score.length,
-      separatorBuilder: (context, index) => const Divider(),
-      itemBuilder: (context, index) => ListTile(
-        leading: Text('${score[index].rate}'),
-        title: Text(score[index].comment),
-      ),
-    );
     return MaterialApp(
       home: Scaffold(
         body: Column(
           children: [
+            ElevatedButton(
+                onPressed: () async {
+                  var dt = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime(2023),
+                      lastDate: DateTime.now());
+                  if (dt != null) {
+                    var date = dt.toString().split(' ')[0];
+                    setState(() {
+                      now = date;
+                    });
+                    showReview(evalDate: date);
+                  }
+                },
+                child: Text(now)),
             RatingBar.builder(
               initialRating: 3,
               minRating: 1,
               direction: Axis.horizontal,
               allowHalfRating: true,
               itemCount: 5,
-              itemPadding: EdgeInsets.symmetric(horizontal: 4.0),
-              itemBuilder: (context, _) => Icon(
+              itemPadding: const EdgeInsets.symmetric(horizontal: 4.0),
+              itemBuilder: (context, _) => const Icon(
                 Icons.star,
                 color: Color.fromARGB(255, 165, 3, 151),
               ),
@@ -51,7 +86,7 @@ class _MyAppState extends State<MyApp> {
             TextFormField(
               controller: controller,
               enabled: enabled,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                   hintText: '오늘의 급식은 어땠나요?',
                   label: Text("급식 평가하기"),
                   border: OutlineInputBorder()),
@@ -61,19 +96,11 @@ class _MyAppState extends State<MyApp> {
                 onPressed: enabled
                     ? () async {
                         var api = MealApi();
-                        var eval_date = DateTime.now().toString().split(' ')[0];
-                        var res =
-                            await api.insert(eval_date, rate, controller.text);
-                        print(res);
-                        score.add(
-                          new Score(rate: rate, comment: controller.text),
-                        );
-                        setState(() {
-                          listView;
-                        });
+                        var res = await api.insert(now, rate, controller.text);
+                        showReview(evalDate: now);
                       }
                     : null,
-                child: Text("저장하기")),
+                child: const Text("저장하기")),
             Expanded(child: listView)
           ],
         ),
